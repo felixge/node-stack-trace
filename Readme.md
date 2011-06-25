@@ -1,6 +1,6 @@
 # stack-trace
 
-Get raw v8 stack traces with ease.
+Get v8 stack traces as an array of CallSite objects.
 
 ## Install
 
