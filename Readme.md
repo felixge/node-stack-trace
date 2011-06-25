@@ -25,7 +25,7 @@ Returns an array of `CallSite` objects, where element `0` is the current call
 site.
 
 When passing a function on the current stack as the `belowFn` parameter, the
-returned array will only include `CallSite`s below this function.
+returned array will only include `CallSite` objects below this function.
 
 ### CallSite
 
