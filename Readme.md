@@ -49,3 +49,7 @@ excerpt:
 > * **isConstructor**: is this a constructor call?
 
 [v8stackapi]: http://code.google.com/p/v8/wiki/JavaScriptStackTraceApi
+
+## License
+
+stack-trace is licensed under the MIT license.
