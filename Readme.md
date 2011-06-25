@@ -14,7 +14,7 @@ npm install stack-trace
 var stackTrace = require('stack-trace');
 var trace = stackTrace.get();
 
-assert.strictEqual(trace[0].getFileName(), __filename);
+require('assert').strictEqual(trace[0].getFileName(), __filename);
 ```
 
 ## API
