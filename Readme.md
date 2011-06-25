@@ -24,7 +24,7 @@ require('assert').strictEqual(trace[0].getFileName(), __filename);
 Returns an array of `CallSite` objects, where element `0` is the current call
 site.
 
-The `belowFn` parameter can be used to pass a function on the stack, the
+When passing a function on the current stack as the `belowFn` parameter, the
 returned array will only include `CallSite`s below this function.
 
 ### CallSite
