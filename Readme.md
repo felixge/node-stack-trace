@@ -55,6 +55,7 @@ are implemented on the returned `CallSite` objects.
 * getFileName
 * getLineNumber
 * getColumnNumber
+* isNative
 
 Note: Except `getFunctionName()`, all of the above methods return exactly the
 same values as you would get from `stackTrace.get()`. `getFunctionName()`
