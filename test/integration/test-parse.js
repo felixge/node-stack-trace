@@ -19,7 +19,7 @@ var stackTrace = require(common.dir.lib + '/stack-trace');
   })();
 })();
 
-(function testSymmetry() {
+(function testCompareRealWithParsedStackTrace() {
     var realTrace = stackTrace.get(); var err = new Error('something went wrong');
     var parsedTrace = stackTrace.parse(err);
 
