@@ -13,5 +13,7 @@
     "node": "*"
   },
   "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "far": "0.0.3"
+  }
 }
