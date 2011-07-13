@@ -20,41 +20,65 @@ var stackTrace = require(common.dir.lib + '/stack-trace');
 })();
 
 (function testCompareRealWithParsedStackTrace() {
-    var realTrace = stackTrace.get(); var err = new Error('something went wrong');
-    var parsedTrace = stackTrace.parse(err);
+  var realTrace = stackTrace.get(); var err = new Error('something went wrong');
+  var parsedTrace = stackTrace.parse(err);
 
-    realTrace.forEach(function(real, i) {
-      var parsed = parsedTrace[i];
+  realTrace.forEach(function(real, i) {
+    var parsed = parsedTrace[i];
 
-      function compare(method, exceptions) {
-        var realValue = real[method]();
-        var parsedValue = parsed[method]();
+    function compare(method, exceptions) {
+      var realValue = real[method]();
+      var parsedValue = parsed[method]();
 
-        if (exceptions && exceptions[i]) {
-          realValue = exceptions[i];
-        }
-
-        var realJson = JSON.stringify(realValue);
-        var parsedJson = JSON.stringify(parsedValue);
-
-        var message =
-          method + ': ' + realJson + ' != ' + parsedJson + ' (#' + i + ')';
-
-        assert.strictEqual(realValue, parsedValue, message);
+      if (exceptions && exceptions[i]) {
+        realValue = exceptions[i];
       }
 
-      compare('getFileName');
-      compare('getFunctionName', {
-        3: 'Object..js',
-        5: 'Function._load',
-        6: 'Array.0',
-        7: 'EventEmitter._tickCallback',
-      });
-      compare('getTypeName');
-      compare('getMethodName');
-      compare('getLineNumber');
-      compare('getColumnNumber', {
-        0: 49
-      });
+      var realJson = JSON.stringify(realValue);
+      var parsedJson = JSON.stringify(parsedValue);
+
+      var message =
+        method + ': ' + realJson + ' != ' + parsedJson + ' (#' + i + ')';
+
+      assert.strictEqual(realValue, parsedValue, message);
+    }
+
+    compare('getFileName');
+    compare('getFunctionName', {
+      3: 'Object..js',
+      5: 'Function._load',
+      6: 'Array.0',
+      7: 'EventEmitter._tickCallback',
     });
+    compare('getTypeName');
+    compare('getMethodName');
+    compare('getLineNumber');
+    compare('getColumnNumber', {
+      0: 47
+    });
+    compare('isNative');
+  });
+})();
+
+(function testStackWithNativeCall() {
+  var err = {};
+  err.stack =
+'AssertionError: true == false\n' +
+'    at Test.fn (/Users/felix/code/node-fast-or-slow/test/fast/example/test-example.js:6:10)\n' +
+'    at Test.run (/Users/felix/code/node-fast-or-slow/lib/test.js:45:10)\n' +
+'    at TestCase.runNext (/Users/felix/code/node-fast-or-slow/lib/test_case.js:73:8)\n' +
+'    at TestCase.run (/Users/felix/code/node-fast-or-slow/lib/test_case.js:61:8)\n' +
+'    at Array.0 (native)\n' +
+'    at EventEmitter._tickCallback (node.js:126:26)';
+
+  var trace = stackTrace.parse(err);
+  var nativeCallSite = trace[4];
+
+  assert.strictEqual(nativeCallSite.getFileName(), null);
+  assert.strictEqual(nativeCallSite.getFunctionName(), 'Array.0');
+  assert.strictEqual(nativeCallSite.getTypeName(), 'Array');
+  assert.strictEqual(nativeCallSite.getMethodName(), '0');
+  assert.strictEqual(nativeCallSite.getLineNumber(), null);
+  assert.strictEqual(nativeCallSite.getColumnNumber(), null);
+  assert.strictEqual(nativeCallSite.isNative(), true);
 })();
