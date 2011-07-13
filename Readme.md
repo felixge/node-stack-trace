@@ -56,6 +56,10 @@ are implemented on the returned `CallSite` objects.
 * getLineNumber
 * getColumnNumber
 
+Note: Except `getFunctionName()`, all of the above methods return exactly the
+same values as you would get from `stackTrace.get()`. `getFunctionName()`
+is sometimes a little different, but still useful.
+
 ### CallSite
 
 The official v8 CallSite object API can be found [here][v8stackapi]. A quick
