@@ -6,6 +6,7 @@ var stackTrace = require(common.dir.lib + '/stack-trace');
   var trace = stackTrace.get();
 
   assert.strictEqual(trace[0].getFunction(), testBasic);
+  assert.strictEqual(trace[0].getFunctionName(), 'testBasic');
   assert.strictEqual(trace[0].getFileName(), __filename);
 })();
 
@@ -13,5 +14,6 @@ var stackTrace = require(common.dir.lib + '/stack-trace');
   (function testBelowFn() {
     var trace = stackTrace.get(testBelowFn);
     assert.strictEqual(trace[0].getFunction(), testWrapper);
+    assert.strictEqual(trace[0].getFunctionName(), 'testWrapper');
   })();
 })();

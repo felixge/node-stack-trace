@@ -10,12 +10,28 @@ npm install stack-trace
 
 ## Usage
 
+The stack-trace module makes it easy for you to capture the current stack:
+
 ``` javascript
 var stackTrace = require('stack-trace');
 var trace = stackTrace.get();
 
 require('assert').strictEqual(trace[0].getFileName(), __filename);
 ```
+
+However, sometimes you have already popped the stack you are interested in,
+and all you have left is an `Error` object. This module can help:
+
+``` javascript
+var stackTrace = require('stack-trace');
+var err = new Error('something went wrong');
+var trace = stackTrace.parse(err);
+
+require('assert').strictEqual(trace[0].getFileName(), __filename);
+```
+
+Please note that parsing the `Error#stack` property is not perfect, only
+certain properties can be retrieved with it as noted in the API docs below.
 
 ## API
 
@@ -26,6 +42,19 @@ site.
 
 When passing a function on the current stack as the `belowFn` parameter, the
 returned array will only include `CallSite` objects below this function.
+
+### stackTrace.parse(err)
+
+Parses the `err.stack` property of an `Error` object into an array compatible
+with those returned by `stackTrace.get()`. However, only the following methods
+are implemented on the returned `CallSite` objects.
+
+* getTypeName
+* getFunctionName
+* getMethodName
+* getFileName
+* getLineNumber
+* getColumnNumber
 
 ### CallSite
 
