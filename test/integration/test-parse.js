@@ -82,3 +82,21 @@ var stackTrace = require(common.dir.lib + '/stack-trace');
   assert.strictEqual(nativeCallSite.getColumnNumber(), null);
   assert.strictEqual(nativeCallSite.isNative(), true);
 })();
+
+(function testStackWithFileOnly() {
+  var err = {};
+  err.stack =
+'AssertionError: true == false\n' +
+'   at /Users/felix/code/node-fast-or-slow/lib/test_case.js:80:10';
+
+  var trace = stackTrace.parse(err);
+  var callSite = trace[0];
+
+  assert.strictEqual(callSite.getFileName(), '/Users/felix/code/node-fast-or-slow/lib/test_case.js');
+  assert.strictEqual(callSite.getFunctionName(), null);
+  assert.strictEqual(callSite.getTypeName(), null);
+  assert.strictEqual(callSite.getMethodName(), null);
+  assert.strictEqual(callSite.getLineNumber(), 80);
+  assert.strictEqual(callSite.getColumnNumber(), 10);
+  assert.strictEqual(callSite.isNative(), false);
+})();
