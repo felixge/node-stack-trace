@@ -17,3 +17,33 @@ var stackTrace = require(common.dir.lib + '/stack-trace');
     assert.strictEqual(trace[0].getFunctionName(), 'testWrapper');
   })();
 })();
+
+
+(function deep1() {
+  (function deep2() {
+    (function deep3() {
+      (function deep4() {
+        (function deep5() {
+          (function deep6() {
+            (function deep7() {
+              (function deep8() {
+                (function deep9() {
+                  (function deep10() {
+                    (function deep10() {
+                      var trace = stackTrace.get();
+                      var hasFirstCallSite = trace.some(function(callSite) {
+                        return callSite.getFunctionName() === 'deep1';
+                      });
+
+                      assert.ok(hasFirstCallSite);
+                    })();
+                  })();
+                })();
+              })();
+            })();
+          })();
+        })();
+      })();
+    })();
+  })();
+})();
