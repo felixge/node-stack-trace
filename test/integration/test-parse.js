@@ -100,3 +100,15 @@ var stackTrace = require(common.dir.lib + '/stack-trace');
   assert.strictEqual(callSite.getColumnNumber(), 10);
   assert.strictEqual(callSite.isNative(), false);
 })();
+
+(function testStackWithMultilineMessage() {
+  var err = {};
+  err.stack =
+'AssertionError: true == false\nAnd some more shit\n' +
+'   at /Users/felix/code/node-fast-or-slow/lib/test_case.js:80:10';
+
+  var trace = stackTrace.parse(err);
+  var callSite = trace[0];
+
+  assert.strictEqual(callSite.getFileName(), '/Users/felix/code/node-fast-or-slow/lib/test_case.js');
+})();
