@@ -37,7 +37,7 @@ certain properties can be retrieved with it as noted in the API docs below.
 
 stack-trace works great with [long-stack-traces][], when parsing an `err.stack`
 that has crossed the event loop boundary, a `CallSite` object returning
-the `'----------------------------------------'` for `getFileName()` is created.
+`'----------------------------------------'` for `getFileName()` is created.
 All other methods of the event loop boundary call site return `null`.
 
 [long-stack-traces]: https://github.com/tlrobinson/long-stack-traces
