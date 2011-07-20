@@ -33,6 +33,15 @@ require('assert').strictEqual(trace[0].getFileName(), __filename);
 Please note that parsing the `Error#stack` property is not perfect, only
 certain properties can be retrieved with it as noted in the API docs below.
 
+## Long stack traces
+
+stack-trace works great with [long-stack-traces][], when parsing an `err.stack`
+that has crossed the event loop boundary, a `CallSite` object returning
+the `'----------------------------------------'` for `getFileName()` is created.
+All other methods of the event loop boundary call site return `null`.
+
+[long-stack-traces]: https://github.com/tlrobinson/long-stack-traces
+
 ## API
 
 ### stackTrace.get([belowFn])

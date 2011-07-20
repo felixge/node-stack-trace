@@ -12,8 +12,10 @@
   "engines": {
     "node": "*"
   },
-  "dependencies": {},
+  "dependencies": {
+  },
   "devDependencies": {
-    "far": "0.0.3"
+    "far": "0.0.3",
+    "long-stack-traces": "0.1.2"
   }
 }
