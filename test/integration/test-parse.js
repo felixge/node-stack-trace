@@ -19,6 +19,20 @@ var stackTrace = require(common.dir.lib + '/stack-trace');
   })();
 })();
 
+
+(function testCorruptStack() {
+  var err = {};
+  err.stack =
+'AssertionError: true == false\n' +
+'    fuck' +
+'    at Test.run (/Users/felix/code/node-fast-or-slow/lib/test.js:45:10)\n' +
+'oh no' +
+'    at TestCase.run (/Users/felix/code/node-fast-or-slow/lib/test_case.js:61:8)\n';
+
+  var trace = stackTrace.parse(err);
+  assert.equal(trace.length, 2);
+})();
+
 (function testCompareRealWithParsedStackTrace() {
   var realTrace = stackTrace.get(); var err = new Error('something went wrong');
   var parsedTrace = stackTrace.parse(err);
