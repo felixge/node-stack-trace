@@ -19,6 +19,13 @@ var stackTrace = require(common.dir.lib + '/stack-trace');
   })();
 })();
 
+(function testNoStack() {
+  var err = {stack: undefined};
+  var trace = stackTrace.parse(err);
+
+  assert.deepEqual(trace, []);
+})();
+
 
 (function testCorruptStack() {
   var err = {};
