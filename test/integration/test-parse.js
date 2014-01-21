@@ -2,6 +2,19 @@ var common = require('../common');
 var assert = common.assert;
 var stackTrace = require(common.dir.lib + '/stack-trace');
 
+(function testObjectInMethodName() {
+  var err = {};
+  err.stack =
+'Error: Foo\n' +
+'    at [object Object].global.every [as _onTimeout] (/Users/hoitz/develop/test.coffee:36:3)\n' +
+'    at Timer.listOnTimeout [as ontimeout] (timers.js:110:15)\n';
+
+  var trace = stackTrace.parse(err);
+
+  assert.strictEqual(trace[0].getFileName(), "/Users/hoitz/develop/test.coffee");
+  assert.strictEqual(trace[1].getFileName(), "timers.js");
+})();
+
 (function testBasic() {
   var err = new Error('something went wrong');
   var trace = stackTrace.parse(err);
