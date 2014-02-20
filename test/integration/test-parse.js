@@ -146,3 +146,21 @@ var stackTrace = require(common.dir.lib + '/stack-trace');
 
   assert.strictEqual(callSite.getFileName(), '/Users/felix/code/node-fast-or-slow/lib/test_case.js');
 })();
+
+(function testStackWithAnonymousFunctionCall() {
+  var err = {};
+  err.stack =
+'AssertionError: expected [] to be arguments\n' +
+'    at Assertion.prop.(anonymous function) (/Users/den/Projects/should.js/lib/should.js:60:14)\n';
+
+  var trace = stackTrace.parse(err);
+  var callSite0 = trace[0];
+
+  assert.strictEqual(callSite0.getFileName(), '/Users/den/Projects/should.js/lib/should.js');
+  assert.strictEqual(callSite0.getFunctionName(), 'Assertion.prop.(anonymous function)');
+  assert.strictEqual(callSite0.getTypeName(), "Assertion");
+  assert.strictEqual(callSite0.getMethodName(), "prop.(anonymous function)");
+  assert.strictEqual(callSite0.getLineNumber(), 60);
+  assert.strictEqual(callSite0.getColumnNumber(), 14);
+  assert.strictEqual(callSite0.isNative(), false);
+})();
