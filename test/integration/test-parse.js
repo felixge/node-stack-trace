@@ -54,7 +54,14 @@ var stackTrace = require(common.dir.lib + '/stack-trace');
 })();
 
 (function testCompareRealWithParsedStackTrace() {
-  var realTrace = stackTrace.get(); var err = new Error('something went wrong');
+  var realTrace, err;
+  function TestClass() {
+  }
+  TestClass.prototype.testFunc = function () {
+    realTrace = stackTrace.get(); err = new Error('something went wrong');
+  }
+  var testObj = new TestClass();
+  testObj.testFunc();
   var parsedTrace = stackTrace.parse(err);
 
   realTrace.forEach(function(real, i) {
@@ -64,7 +71,7 @@ var stackTrace = require(common.dir.lib + '/stack-trace');
       var realValue = real[method]();
       var parsedValue = parsed[method]();
 
-      if (exceptions && exceptions[i]) {
+      if (exceptions && typeof exceptions[i] != 'undefined') {
         realValue = exceptions[i];
       }
 
@@ -78,17 +85,19 @@ var stackTrace = require(common.dir.lib + '/stack-trace');
     }
 
     compare('getFileName');
-    compare('getFunctionName', {
-      3: 'Object..js',
-      5: 'Function._load',
-      6: 'Array.0',
-      7: 'EventEmitter._tickCallback',
+    compare('getFunctionName');
+    compare('getTypeName', {
+      1: null, //for 0.12.x
+      8: null, //for 0.12.x
+      9: null
     });
-    compare('getTypeName');
-    compare('getMethodName');
+    compare('getMethodName', {
+      6: '_load',  //for 0.12.x
+      7: 'runMain' //for 0.12.x
+    });
     compare('getLineNumber');
     compare('getColumnNumber', {
-      0: 47
+      0: 41
     });
     compare('isNative');
   });
@@ -158,8 +167,8 @@ var stackTrace = require(common.dir.lib + '/stack-trace');
 
   assert.strictEqual(callSite0.getFileName(), '/Users/den/Projects/should.js/lib/should.js');
   assert.strictEqual(callSite0.getFunctionName(), 'Assertion.prop.(anonymous function)');
-  assert.strictEqual(callSite0.getTypeName(), "Assertion");
-  assert.strictEqual(callSite0.getMethodName(), "prop.(anonymous function)");
+  assert.strictEqual(callSite0.getTypeName(), "Assertion.prop");
+  assert.strictEqual(callSite0.getMethodName(), "(anonymous function)");
   assert.strictEqual(callSite0.getLineNumber(), 60);
   assert.strictEqual(callSite0.getColumnNumber(), 14);
   assert.strictEqual(callSite0.isNative(), false);
