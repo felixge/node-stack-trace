@@ -1,4 +1,5 @@
 # stack-trace
+[![Build Status](https://travis-ci.org/felixge/node-stack-trace.svg?branch=master)](https://travis-ci.org/felixge/node-stack-trace)
 
 Get v8 stack traces as an array of CallSite objects.
 
