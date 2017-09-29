@@ -8,7 +8,14 @@ function badFn() {
   var err = new Error('oh no');
   var trace = stackTrace.parse(err);
 
-  assert.ok(trace[2].getFileName().match(/-----/));
+  for (var i in trace) {
+    var filename = trace[i].getFileName();
+    if (typeof filename === 'string' && filename.match(/-----/)) {
+      assert.ok(true)
+      return;
+    }
+  }
+  assert.fail();
 };
 
 setTimeout(badFn, 10);
