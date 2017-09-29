@@ -3,6 +3,7 @@ dist: trusty
 sudo: false
 node_js:
   - "iojs"
+  - "8"
   - "7"
   - "6"
   - "5"
