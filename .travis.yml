@@ -17,5 +17,3 @@ matrix:
     - node_js: "7"
     - node_js: "6"
     - node_js: "5"
-
-script: make test
