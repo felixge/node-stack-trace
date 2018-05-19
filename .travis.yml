@@ -3,6 +3,7 @@ dist: trusty
 sudo: false
 node_js:
   - "iojs"
+  - "8"
   - "7"
   - "6"
   - "5"
@@ -14,6 +15,7 @@ node_js:
 matrix:
   allow_failures:
     - node_js: "iojs"
+    - node_js: "8"
     - node_js: "7"
     - node_js: "6"
     - node_js: "5"
