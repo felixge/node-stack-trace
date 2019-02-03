@@ -53,6 +53,18 @@ var stackTrace = require(common.dir.lib + '/stack-trace');
   assert.equal(trace.length, 2);
 })();
 
+(function testTraceBracesInPath() {
+  var err = {};
+  err.stack =
+'AssertionError: true == false\n' +
+'    at Test.run (/Users/felix (something)/code/node-fast-or-slow/lib/test.js:45:10)\n' +
+'    at TestCase.run (/Users/felix (something)/code/node-fast-or-slow/lib/test_case.js:61:8)\n';
+
+  var trace = stackTrace.parse(err);
+  assert.equal(trace.length, 2);
+  assert.equal(trace[0].getFileName(), '/Users/felix (something)/code/node-fast-or-slow/lib/test.js');
+})();
+
 (function testTraceWitoutColumnNumbers() {
   var err = {};
   err.stack =
