@@ -14,17 +14,24 @@
     ".": "./index.js",
     "./package.json": "./package.json"
   },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {
+      "^.+\\.js$": "babel-jest"
+    }
+  },
   "scripts": {
-    "test": "./test/run.js",
+    "test": "jest",
     "release": "git push && git push --tags && npm publish"
   },
   "engines": {
-    "node": "*"
+    "node": "16"
   },
   "license": "MIT",
-  "dependencies": {},
   "devDependencies": {
-    "far": "0.0.3",
+    "@babel/preset-env": "^7.14.1",
+    "babel-jest": "^26.6.3",
+    "jest": "^26.6.3",
     "long-stack-traces": "0.1.2"
   }
 }
