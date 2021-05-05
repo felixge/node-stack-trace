@@ -92,7 +92,7 @@ excerpt:
 > * **isNative**: is this call in native V8 code?
 > * **isConstructor**: is this a constructor call?
 
-[v8stackapi]: http://code.google.com/p/v8/wiki/JavaScriptStackTraceApi
+[v8stackapi]: https://v8.dev/docs/stack-trace-api
 
 ## License
 
