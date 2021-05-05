@@ -1,34 +1,32 @@
-exports.get = function(belowFn) {
-  var oldLimit = Error.stackTraceLimit;
+export function get(belowFn) {
+  const oldLimit = Error.stackTraceLimit;
   Error.stackTraceLimit = Infinity;
 
-  var dummyObject = {};
+  const dummyObject = {};
 
-  var v8Handler = Error.prepareStackTrace;
+  const v8Handler = Error.prepareStackTrace;
   Error.prepareStackTrace = function(dummyObject, v8StackTrace) {
     return v8StackTrace;
   };
-  Error.captureStackTrace(dummyObject, belowFn || exports.get);
+  Error.captureStackTrace(dummyObject, belowFn || get);
 
-  var v8StackTrace = dummyObject.stack;
+  const v8StackTrace = dummyObject.stack;
   Error.prepareStackTrace = v8Handler;
   Error.stackTraceLimit = oldLimit;
 
   return v8StackTrace;
-};
+}
 
-exports.parse = function(err) {
+export function parse(err) {
   if (!err.stack) {
     return [];
   }
 
-  var self = this;
-  var lines = err.stack.split('\n').slice(1);
-
+  const lines = err.stack.split('\n').slice(1);
   return lines
     .map(function(line) {
       if (line.match(/^\s*[-]{4,}$/)) {
-        return self._createParsedCallSite({
+        return createParsedCallSite({
           fileName: line,
           lineNumber: null,
           functionName: null,
@@ -39,33 +37,32 @@ exports.parse = function(err) {
         });
       }
 
-      var lineMatch = line.match(/at (?:(.+?)\s+\()?(?:(.+?):(\d+)(?::(\d+))?|([^)]+))\)?/);
+      const lineMatch = line.match(/at (?:(.+?)\s+\()?(?:(.+?):(\d+)(?::(\d+))?|([^)]+))\)?/);
       if (!lineMatch) {
         return;
       }
 
-      var object = null;
-      var method = null;
-      var functionName = null;
-      var typeName = null;
-      var methodName = null;
-      var isNative = (lineMatch[5] === 'native');
+      let object = null;
+      let method = null;
+      let functionName = null;
+      let typeName = null;
+      let methodName = null;
+      let isNative = (lineMatch[5] === 'native');
 
       if (lineMatch[1]) {
         functionName = lineMatch[1];
-        var methodStart = functionName.lastIndexOf('.');
+        let methodStart = functionName.lastIndexOf('.');
         if (functionName[methodStart-1] == '.')
           methodStart--;
         if (methodStart > 0) {
           object = functionName.substr(0, methodStart);
           method = functionName.substr(methodStart + 1);
-          var objectEnd = object.indexOf('.Module');
+          const objectEnd = object.indexOf('.Module');
           if (objectEnd > 0) {
             functionName = functionName.substr(objectEnd + 1);
             object = object.substr(0, objectEnd);
           }
         }
-        typeName = null;
       }
 
       if (method) {
@@ -78,7 +75,7 @@ exports.parse = function(err) {
         functionName = null;
       }
 
-      var properties = {
+      const properties = {
         fileName: lineMatch[2] || null,
         lineNumber: parseInt(lineMatch[3], 10) || null,
         functionName: functionName,
@@ -88,20 +85,20 @@ exports.parse = function(err) {
         'native': isNative,
       };
 
-      return self._createParsedCallSite(properties);
+      return createParsedCallSite(properties);
     })
     .filter(function(callSite) {
       return !!callSite;
     });
-};
+}
 
 function CallSite(properties) {
-  for (var property in properties) {
+  for (const property in properties) {
     this[property] = properties[property];
   }
 }
 
-var strProperties = [
+const strProperties = [
   'this',
   'typeName',
   'functionName',
@@ -112,18 +109,21 @@ var strProperties = [
   'function',
   'evalOrigin'
 ];
-var boolProperties = [
+
+const boolProperties = [
   'topLevel',
   'eval',
   'native',
   'constructor'
 ];
+
 strProperties.forEach(function (property) {
   CallSite.prototype[property] = null;
   CallSite.prototype['get' + property[0].toUpperCase() + property.substr(1)] = function () {
     return this[property];
   }
 });
+
 boolProperties.forEach(function (property) {
   CallSite.prototype[property] = false;
   CallSite.prototype['is' + property[0].toUpperCase() + property.substr(1)] = function () {
@@ -131,6 +131,6 @@ boolProperties.forEach(function (property) {
   }
 });
 
-exports._createParsedCallSite = function(properties) {
+function createParsedCallSite(properties) {
   return new CallSite(properties);
-};
+}

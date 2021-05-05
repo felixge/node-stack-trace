@@ -8,7 +8,12 @@
     "type": "git",
     "url": "git://github.com/felixge/node-stack-trace.git"
   },
-  "main": "./lib/stack-trace",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
   "scripts": {
     "test": "./test/run.js",
     "release": "git push && git push --tags && npm publish"
