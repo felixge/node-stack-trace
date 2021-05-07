@@ -2,7 +2,7 @@
   "author": "Felix Geisendörfer <felix@debuggable.com> (http://debuggable.com/)",
   "name": "stack-trace",
   "description": "Get v8 stack traces as an array of CallSite objects.",
-  "version": "0.1.0",
+  "version": "1.0.0-pre1",
   "homepage": "https://github.com/felixge/node-stack-trace",
   "repository": {
     "type": "git",
