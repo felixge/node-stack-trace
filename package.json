@@ -2,24 +2,36 @@
   "author": "Felix Geisendörfer <felix@debuggable.com> (http://debuggable.com/)",
   "name": "stack-trace",
   "description": "Get v8 stack traces as an array of CallSite objects.",
-  "version": "0.0.10",
+  "version": "1.0.0-pre1",
   "homepage": "https://github.com/felixge/node-stack-trace",
   "repository": {
     "type": "git",
     "url": "git://github.com/felixge/node-stack-trace.git"
   },
-  "main": "./lib/stack-trace",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {
+      "^.+\\.js$": "babel-jest"
+    }
+  },
   "scripts": {
-    "test": "./test/run.js",
+    "test": "jest",
     "release": "git push && git push --tags && npm publish"
   },
   "engines": {
-    "node": "*"
+    "node": "16"
   },
   "license": "MIT",
-  "dependencies": {},
   "devDependencies": {
-    "far": "0.0.3",
+    "@babel/preset-env": "^7.14.1",
+    "babel-jest": "^26.6.3",
+    "jest": "^26.6.3",
     "long-stack-traces": "0.1.2"
   }
 }

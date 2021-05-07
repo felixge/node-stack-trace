@@ -1,4 +1,5 @@
 # stack-trace
+
 [![Build Status](https://travis-ci.org/felixge/node-stack-trace.svg?branch=master)](https://travis-ci.org/felixge/node-stack-trace)
 
 Get v8 stack traces as an array of CallSite objects.
@@ -13,22 +14,22 @@ npm install stack-trace
 
 The stack-trace module makes it easy for you to capture the current stack:
 
-``` javascript
-var stackTrace = require('stack-trace');
-var trace = stackTrace.get();
+```javascript
+import { get } from 'stack-trace';
+const trace = get();
 
-require('assert').strictEqual(trace[0].getFileName(), __filename);
+expect(trace[0].getFileName()).toBe(__filename);
 ```
 
 However, sometimes you have already popped the stack you are interested in,
 and all you have left is an `Error` object. This module can help:
 
-``` javascript
-var stackTrace = require('stack-trace');
-var err = new Error('something went wrong');
-var trace = stackTrace.parse(err);
+```javascript
+import { parse } from 'stack-trace';
+const err = new Error('something went wrong');
+const trace = parse(err);
 
-require('assert').strictEqual(trace[0].getFileName(), __filename);
+expect(trace[0].getFileName()).toBe(__filename);
 ```
 
 Please note that parsing the `Error#stack` property is not perfect, only
@@ -92,7 +93,7 @@ excerpt:
 > * **isNative**: is this call in native V8 code?
 > * **isConstructor**: is this a constructor call?
 
-[v8stackapi]: http://code.google.com/p/v8/wiki/JavaScriptStackTraceApi
+[v8stackapi]: https://v8.dev/docs/stack-trace-api
 
 ## License
 
