@@ -1,2 +1,3 @@
-test/
-Makefile
+__test__/
+.babelrc
+.travis.yml
