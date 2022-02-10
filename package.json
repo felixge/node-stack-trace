@@ -25,7 +25,7 @@
     "release": "git push && git push --tags && npm publish"
   },
   "engines": {
-    "node": "16"
+    "node": ">=16"
   },
   "license": "MIT",
   "devDependencies": {
