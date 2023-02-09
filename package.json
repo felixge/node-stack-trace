@@ -2,7 +2,7 @@
   "author": "Felix Geisendörfer <felix@debuggable.com> (http://debuggable.com/)",
   "name": "stack-trace",
   "description": "Get v8 stack traces as an array of CallSite objects.",
-  "version": "1.0.0-pre1",
+  "version": "1.0.0-pre2",
   "homepage": "https://github.com/felixge/node-stack-trace",
   "repository": {
     "type": "git",
@@ -25,7 +25,7 @@
     "release": "git push && git push --tags && npm publish"
   },
   "engines": {
-    "node": "16"
+    "node": ">=16"
   },
   "license": "MIT",
   "devDependencies": {
