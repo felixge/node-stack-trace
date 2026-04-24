@@ -103,22 +103,21 @@ describe("parse", () => {
           realValue = exceptions[i];
         }
 
-        //const realJson = JSON.stringify(realValue);
-        //const parsedJson = JSON.stringify(parsedValue);
-        //console.log(method + ': ' + realJson + ' != ' + parsedJson + ' (#' + i + ')');
         expect(realValue).toBe(parsedValue);
       }
 
       compare('getFileName');
       compare('getFunctionName', {
-        2: 'Object.asyncJestTest',
-        4: 'new Promise'
+        1: 'Object.testFunc',
+        3: 'new Promise'
       });
       compare('getTypeName', {
-        7: null
+        2: 'Promise.finally',
+        6: null
       });
       compare('getMethodName', {
-        2: 'asyncJestTest'
+        1: 'testFunc',
+        2: 'completed'
       });
       compare('getLineNumber', {
         0: 88,
