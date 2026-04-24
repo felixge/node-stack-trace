@@ -74,7 +74,7 @@ is sometimes a little different, but still useful.
 
 ### CallSite
 
-The official v8 CallSite object API can be found [here][https://github.com/v8/v8/wiki/Stack-Trace-API#customizing-stack-traces]. A quick
+The official v8 CallSite object API can be found [here](https://v8.dev/docs/stack-trace-api#customizing-stack-traces). A quick
 excerpt:
 
 > A CallSite object defines the following methods:
