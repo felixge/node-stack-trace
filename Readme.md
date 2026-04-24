@@ -1,6 +1,7 @@
 # stack-trace
 
-[![Build Status](https://travis-ci.org/felixge/node-stack-trace.svg?branch=master)](https://travis-ci.org/felixge/node-stack-trace)
+[![NPM Version](https://img.shields.io/npm/v/stack-trace.svg)](https://www.npmjs.com/package/stack-trace)
+[![Tests](https://github.com/felixge/node-stack-trace/actions/workflows/test.yml/badge.svg)](https://github.com/felixge/node-stack-trace/actions/workflows/test.yml)
 
 Get v8 stack traces as an array of CallSite objects.
 
