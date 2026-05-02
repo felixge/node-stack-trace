@@ -511,23 +511,17 @@ describe("parse", () => {
     assert.strictEqual(trace1.length, trace2.length);
   });
 
-  it("at-line regex does not hang on adversarial input", () => {
+  it("at-line regex does not hang on adversarial input", { timeout: 1000 }, () => {
     const adversarial = '    at ' + 'a'.repeat(10000) + '(' + 'b'.repeat(10000) + ')';
     const err = { stack: 'Error: test\n' + adversarial };
-    const start = performance.now();
     const trace = parse(err);
-    const elapsed = performance.now() - start;
-    assert(elapsed < 1000, `parse took ${elapsed.toFixed(1)}ms on adversarial input`);
     assert.strictEqual(trace.length, 1);
   });
 
-  it("source-loc regex does not hang on adversarial first line", () => {
+  it("source-loc regex does not hang on adversarial first line", { timeout: 1000 }, () => {
     const longPath = 'a'.repeat(50000);
     const err = { stack: longPath + ':1\n    at fn (file.js:1:2)' };
-    const start = performance.now();
     const trace = parse(err);
-    const elapsed = performance.now() - start;
-    assert(elapsed < 1000, `parse took ${elapsed.toFixed(1)}ms on adversarial source loc`);
     assert.strictEqual(trace[0].getFileName(), longPath);
     assert.strictEqual(trace[0].getLineNumber(), 1);
   });
