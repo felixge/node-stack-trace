@@ -244,11 +244,7 @@ describe("parse", () => {
   // ESM SyntaxErrors produce a standard "SyntaxError: message" first line instead
   // (no prepended source location), so no change is needed for the ESM case.
   //
-  // Tests marked [REQUIRES FIX] fail against the original parse() and pass
-  // only after the source-location detection change in index.js.
-  // Tests marked [REGRESSION] verify no existing behaviour was broken.
-
-  // [REQUIRES FIX] CJS SyntaxError - fixture matches actual Node 20+ output
+  // CJS SyntaxError - fixture matches actual Node 20+ output
   it("SyntaxError CJS: source location captured as first frame", () => {
     // Fixture derived from real Node 20+/25 CJS SyntaxError stack:
     //   require('/path/to/bad.cjs') where bad.cjs contains "const x = @invalid;"
@@ -283,7 +279,7 @@ describe("parse", () => {
     assert.strictEqual(trace[2].getLineNumber(), 1803);
   });
 
-  // [REQUIRES FIX] CJS SyntaxError with column in source location
+  // CJS SyntaxError with column in source location
   it("SyntaxError CJS: source location with column number captured", () => {
     const err = {};
     err.stack =
@@ -306,7 +302,7 @@ describe("parse", () => {
     assert.strictEqual(trace[1].getLineNumber(), 1762);
   });
 
-  // [REGRESSION] columnNumber of 0 must not be coerced to null (0 is falsy)
+  // columnNumber of 0 must not be coerced to null (0 is falsy)
   it("SyntaxError CJS: column number 0 is preserved (not coerced to null)", () => {
     const err = {};
     err.stack =
@@ -341,7 +337,7 @@ describe("parse", () => {
     assert.strictEqual(trace[1].getFunctionName(), 'wrapSafe');
   });
 
-  // [REQUIRES FIX - defensive] file:// source location (possible in some environments)
+  // file:// source location (possible in some environments)
   // Although Node 20+ CJS SyntaxErrors do not produce file:// first lines in practice,
   // the parser should handle this form correctly and not exclude it.
   it("file:// source location is captured correctly (defensive)", () => {
@@ -364,7 +360,7 @@ describe("parse", () => {
     assert.strictEqual(trace[1].getFunctionName(), 'wrapSafe');
   });
 
-  // [REGRESSION] ESM SyntaxError produces a standard first line — no source loc frame
+  // ESM SyntaxError produces a standard first line — no source loc frame
   // Verified on Node 25.9: "import('/tmp/bad.mjs')" where bad.mjs has invalid syntax
   // produces: "SyntaxError: Invalid or unexpected token\n    at compileSourceTextModule..."
   // The parse() output should be the at-frames only, no prepended source loc frame.
@@ -386,7 +382,7 @@ describe("parse", () => {
     assert.strictEqual(trace[1].getFunctionName(), 'ModuleLoader.moduleStrategy');
   });
 
-  // [REGRESSION] Normal errors are not affected
+  // Normal errors are not affected by source location detection
   it("normal Error stack is not affected by source location detection", () => {
     const err = {};
     err.stack =
@@ -402,7 +398,7 @@ describe("parse", () => {
     assert.strictEqual(trace[1].getFunctionName(), 'bar');
   });
 
-  // [REGRESSION] TypeError not affected
+  // TypeError not affected by source location detection
   it("TypeError stack is not affected by source location detection", () => {
     // Actual Node 20+ TypeError format
     const err = {};
@@ -416,7 +412,7 @@ describe("parse", () => {
     assert.strictEqual(trace[0].getFunctionName(), 'Object.method');
   });
 
-  // [REGRESSION] RangeError not affected
+  // RangeError not affected by source location detection
   it("RangeError stack is not affected by source location detection", () => {
     const err = {};
     err.stack =
@@ -429,7 +425,7 @@ describe("parse", () => {
     assert.strictEqual(trace[0].getFunctionName(), 'recursive');
   });
 
-  // [REGRESSION] Custom exception types with messages containing colon+digits
+  // Custom exception types with messages containing colon+digits are not affected
   it("custom error type with message ending in digits is not treated as source loc", () => {
     // "MyException: /path:10" has ": " so guard correctly excludes it
     const err = {};
@@ -442,7 +438,7 @@ describe("parse", () => {
     assert.strictEqual(trace[0].getFunctionName(), 'fn');
   });
 
-  // [REGRESSION] URL schemes excluded (http/https/ftp/data/blob)
+  // URL schemes are excluded from source location detection (http/https/ftp/data/blob)
   it("http URL is not treated as source loc", () => {
     const err = {};
     err.stack = 'http://localhost:3000\n    at fn (file.js:1:2)';
@@ -484,7 +480,7 @@ describe("parse", () => {
     assert.strictEqual(trace[0].getFunctionName(), 'fn');
   });
 
-  // [REGRESSION] forEach+push is equivalent to map+filter: no falsy entries in output
+  // forEach+push is equivalent to map+filter: no falsy entries in output
   it("non-parseable lines produce no entries in output array", () => {
     // Ensures the forEach+push refactor correctly skips non-matching lines,
     // equivalent to the prior map().filter(Boolean) implementation.
@@ -515,30 +511,23 @@ describe("parse", () => {
     assert.strictEqual(trace1.length, trace2.length);
   });
 
-  // [SECURITY] ReDoS: both regexes must complete fast on adversarial input
   it("at-line regex does not hang on adversarial input", () => {
-    // Stress /at (?:(.+?)\s+\()?(?:(.+?):(\d+)(?::(\d+))?|([^)]+))\)?/
     const adversarial = '    at ' + 'a'.repeat(10000) + '(' + 'b'.repeat(10000) + ')';
     const err = { stack: 'Error: test\n' + adversarial };
     const start = performance.now();
     const trace = parse(err);
     const elapsed = performance.now() - start;
-    // 1 000 ms is intentionally generous to avoid flakiness on loaded CI runners.
-    // True ReDoS would take seconds to minutes on this input.
-    assert(elapsed < 1000, `parse took ${elapsed.toFixed(1)}ms on adversarial input — possible ReDoS`);
+    assert(elapsed < 1000, `parse took ${elapsed.toFixed(1)}ms on adversarial input`);
     assert.strictEqual(trace.length, 1);
   });
 
   it("source-loc regex does not hang on adversarial first line", () => {
-    // Stress /^(.+?):(\d+)(?::(\d+))?$/ with a very long path
     const longPath = 'a'.repeat(50000);
     const err = { stack: longPath + ':1\n    at fn (file.js:1:2)' };
     const start = performance.now();
     const trace = parse(err);
     const elapsed = performance.now() - start;
-    // 1 000 ms is intentionally generous to avoid flakiness on loaded CI runners.
-    // True ReDoS would take seconds to minutes on this input.
-    assert(elapsed < 1000, `parse took ${elapsed.toFixed(1)}ms on adversarial source loc — possible ReDoS`);
+    assert(elapsed < 1000, `parse took ${elapsed.toFixed(1)}ms on adversarial source loc`);
     assert.strictEqual(trace[0].getFileName(), longPath);
     assert.strictEqual(trace[0].getLineNumber(), 1);
   });
