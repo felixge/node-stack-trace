@@ -459,6 +459,15 @@ describe("parse", () => {
     assert.strictEqual(trace[0].getFunctionName(), 'fn');
   });
 
+  it("node: specifier is not treated as source loc", () => {
+    // node:internal/... paths use 'node:' (no '//') — ensure the guard catches this
+    const err = {};
+    err.stack = 'node:internal/modules/cjs/loader:1762:18\n    at fn (file.js:1:2)';
+    const trace = parse(err);
+    assert.strictEqual(trace.length, 1);
+    assert.strictEqual(trace[0].getFunctionName(), 'fn');
+  });
+
   it("error message with colon+digits is not treated as source loc", () => {
     const err = {};
     err.stack = 'MyFault: status:404\n    at fn (file.js:1:2)';

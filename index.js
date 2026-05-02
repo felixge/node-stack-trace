@@ -44,17 +44,17 @@ export function parse(err) {
   //               "/path/to/file.js:10" never do. Empty-message errors (e.g. "Error")
   //               don't match the source-loc regex below, so they're safe without
   //               this guard.
-  //   2. /^(?:https?|ftp|data|blob|node):\/\//  — excludes network/data URL schemes.
+  //   2. /^(?:https?|ftp|data|blob):/\// or /^node:/  — excludes network/data URL
+  //               schemes and Node.js built-in specifiers (e.g. "node:internal/...").
+  //               Note: node: paths use the bare "node:" prefix, NOT "node://", so
+  //               they require a separate pattern.
   //               file:// is intentionally permitted (valid source location prefix).
-  //               The node: pseudo-scheme is also excluded (e.g. node:internal/...);
-  //               while node: paths don't appear as the first stack line in practice,
-  //               excluding them prevents any ambiguity.
   //
   // Tested on Node 24.x and 25.x (CI matrix). Verified against the
   // @exceptionless/node package test suite to confirm no regressions.
   const firstLine = allLines[0];
   const sourceLocMatch = firstLine && firstLine.match(/^(.+?):(\d+)(?::(\d+))?$/);
-  if (sourceLocMatch && !firstLine.match(/:\s/) && !firstLine.match(/^(?:https?|ftp|data|blob|node):\/\//)) {
+  if (sourceLocMatch && !firstLine.match(/:\s/) && !firstLine.match(/^(?:https?|ftp|data|blob):\/\//) && !firstLine.match(/^node:/)) {
     const parsedLine = parseInt(sourceLocMatch[2], 10);
     const parsedCol = parseInt(sourceLocMatch[3], 10);
     frames.push(createParsedCallSite({
