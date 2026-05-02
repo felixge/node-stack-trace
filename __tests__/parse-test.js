@@ -15,6 +15,23 @@ describe("parse", () => {
     assert.strictEqual(trace[1].getFileName(), "timers.js");
   });
 
+  // Regression test for https://github.com/felixge/node-stack-trace/issues/13
+  it("[object Object] as type name in function", () => {
+    const err = {};
+    err.stack =
+      'Error: Could not do something\n' +
+      '  at [object Object].foo.bar (foo.js:1:2)\n';
+
+    const trace = parse(err);
+    assert.strictEqual(trace[0].getFileName(), 'foo.js');
+    assert.strictEqual(trace[0].getFunctionName(), '[object Object].foo.bar');
+    assert.strictEqual(trace[0].getTypeName(), '[object Object].foo');
+    assert.strictEqual(trace[0].getMethodName(), 'bar');
+    assert.strictEqual(trace[0].getLineNumber(), 1);
+    assert.strictEqual(trace[0].getColumnNumber(), 2);
+    assert.strictEqual(trace[0].isNative(), false);
+  });
+
   it("basic", () => {
     (function testBasic() {
       const err = new Error('something went wrong');
@@ -117,13 +134,9 @@ describe("parse", () => {
         userFrames++;
       }
 
-      function compare(method, exceptions) {
-        let realValue = real[method]();
+      function compare(method) {
+        const realValue = real[method]();
         const parsedValue = parsed[method]();
-
-        if (exceptions && typeof exceptions[i] != 'undefined') {
-          realValue = exceptions[i];
-        }
 
         assert.strictEqual(realValue, parsedValue);
       }
@@ -211,5 +224,305 @@ describe("parse", () => {
     assert.strictEqual(callSite0.getLineNumber(), 60);
     assert.strictEqual(callSite0.getColumnNumber(), 14);
     assert.strictEqual(callSite0.isNative(), false);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Issue #29: SyntaxError source location
+  // ---------------------------------------------------------------------------
+  // When Node.js encounters a SyntaxError in a CJS module (via require()),
+  // V8 prepends the source location as the very first line of err.stack:
+  //
+  //   /path/to/file.cjs:1          <- first line: file:lineNumber
+  //   const x = @invalid;          <- offending code
+  //             ^                  <- pointer
+  //                                <- blank line
+  //   SyntaxError: Invalid or unexpected token
+  //       at wrapSafe (node:internal/modules/cjs/loader:1762:18)
+  //       at Module._compile (node:internal/modules/cjs/loader:1803:20)
+  //
+  // This format is produced by Node 20+ (verified on v25.9.0).
+  // ESM SyntaxErrors produce a standard "SyntaxError: message" first line instead
+  // (no prepended source location), so no change is needed for the ESM case.
+  //
+  // CJS SyntaxError - fixture matches actual Node 20+ output
+  it("SyntaxError CJS: source location captured as first frame", () => {
+    // Fixture derived from real Node 20+/25 CJS SyntaxError stack:
+    //   require('/path/to/bad.cjs') where bad.cjs contains "const x = @invalid;"
+    const err = {};
+    err.stack =
+      '/path/to/bad.cjs:1\n' +
+      'const x = @invalid;\n' +
+      '          ^\n' +
+      '\n' +
+      'SyntaxError: Invalid or unexpected token\n' +
+      '    at wrapSafe (node:internal/modules/cjs/loader:1762:18)\n' +
+      '    at Module._compile (node:internal/modules/cjs/loader:1803:20)';
+
+    const trace = parse(err);
+
+    // Frame 0: the source location line
+    assert.strictEqual(trace[0].getFileName(), '/path/to/bad.cjs');
+    assert.strictEqual(trace[0].getLineNumber(), 1);
+    assert.strictEqual(trace[0].getColumnNumber(), null);
+    assert.strictEqual(trace[0].getFunctionName(), null);
+    assert.strictEqual(trace[0].getTypeName(), null);
+    assert.strictEqual(trace[0].getMethodName(), null);
+    assert.strictEqual(trace[0].isNative(), false);
+
+    // Frame 1+: normal at-frames
+    assert.strictEqual(trace[1].getFunctionName(), 'wrapSafe');
+    assert.strictEqual(trace[1].getFileName(), 'node:internal/modules/cjs/loader');
+    assert.strictEqual(trace[1].getLineNumber(), 1762);
+    assert.strictEqual(trace[1].getColumnNumber(), 18);
+    assert.strictEqual(trace[2].getFunctionName(), 'Module._compile');
+    assert.strictEqual(trace[2].getFileName(), 'node:internal/modules/cjs/loader');
+    assert.strictEqual(trace[2].getLineNumber(), 1803);
+  });
+
+  // CJS SyntaxError with column in source location
+  it("SyntaxError CJS: source location with column number captured", () => {
+    const err = {};
+    err.stack =
+      '/path/to/bad.cjs:22:5\n' +
+      'unexpected code here\n' +
+      '    ^\n' +
+      '\n' +
+      'SyntaxError: Unexpected identifier\n' +
+      '    at wrapSafe (node:internal/modules/cjs/loader:1762:18)';
+
+    const trace = parse(err);
+
+    assert.strictEqual(trace[0].getFileName(), '/path/to/bad.cjs');
+    assert.strictEqual(trace[0].getLineNumber(), 22);
+    assert.strictEqual(trace[0].getColumnNumber(), 5);
+    assert.strictEqual(trace[0].getFunctionName(), null);
+    assert.strictEqual(trace[0].isNative(), false);
+
+    assert.strictEqual(trace[1].getFunctionName(), 'wrapSafe');
+    assert.strictEqual(trace[1].getLineNumber(), 1762);
+  });
+
+  // columnNumber of 0 must not be coerced to null (0 is falsy)
+  it("SyntaxError CJS: column number 0 is preserved (not coerced to null)", () => {
+    const err = {};
+    err.stack =
+      '/path/to/bad.cjs:1:0\n' +
+      'SyntaxError: Unexpected token\n' +
+      '    at wrapSafe (node:internal/modules/cjs/loader:1762:18)';
+
+    const trace = parse(err);
+
+    assert.strictEqual(trace[0].getFileName(), '/path/to/bad.cjs');
+    assert.strictEqual(trace[0].getLineNumber(), 1);
+    assert.strictEqual(trace[0].getColumnNumber(), 0, 'columnNumber 0 must not be coerced to null');
+  });
+  it("SyntaxError CJS: Windows drive-letter path captured", () => {
+    // Windows CJS SyntaxError: C:\path\to\file.cjs:15
+    const err = {};
+    err.stack =
+      'C:\\Users\\dev\\project\\index.cjs:15\n' +
+      'const x = @invalid;\n' +
+      '          ^\n' +
+      '\n' +
+      'SyntaxError: Invalid or unexpected token\n' +
+      '    at wrapSafe (node:internal/modules/cjs/loader:1762:18)';
+
+    const trace = parse(err);
+
+    assert.strictEqual(trace[0].getFileName(), 'C:\\Users\\dev\\project\\index.cjs');
+    assert.strictEqual(trace[0].getLineNumber(), 15);
+    assert.strictEqual(trace[0].getColumnNumber(), null);
+    assert.strictEqual(trace[0].getFunctionName(), null);
+
+    assert.strictEqual(trace[1].getFunctionName(), 'wrapSafe');
+  });
+
+  // file:// source location (possible in some environments)
+  // Although Node 20+ CJS SyntaxErrors do not produce file:// first lines in practice,
+  // the parser should handle this form correctly and not exclude it.
+  it("file:// source location is captured correctly (defensive)", () => {
+    const err = {};
+    err.stack =
+      'file:///path/to/bad.js:10\n' +
+      'bad code;\n' +
+      '^\n' +
+      '\n' +
+      'SyntaxError: Unexpected token\n' +
+      '    at wrapSafe (node:internal/modules/cjs/loader:1762:18)';
+
+    const trace = parse(err);
+
+    assert.strictEqual(trace[0].getFileName(), 'file:///path/to/bad.js');
+    assert.strictEqual(trace[0].getLineNumber(), 10);
+    assert.strictEqual(trace[0].getColumnNumber(), null);
+    assert.strictEqual(trace[0].getFunctionName(), null);
+    assert.strictEqual(trace[0].isNative(), false);
+    assert.strictEqual(trace[1].getFunctionName(), 'wrapSafe');
+  });
+
+  // ESM SyntaxError produces a standard first line — no source loc frame
+  // Verified on Node 25.9: "import('/tmp/bad.mjs')" where bad.mjs has invalid syntax
+  // produces: "SyntaxError: Invalid or unexpected token\n    at compileSourceTextModule..."
+  // The parse() output should be the at-frames only, no prepended source loc frame.
+  it("ESM SyntaxError: standard message first line, no source loc prepended", () => {
+    // Actual ESM SyntaxError format from Node 20+ (no source location prefix line)
+    const err = {};
+    err.stack =
+      'SyntaxError: Invalid or unexpected token\n' +
+      '    at compileSourceTextModule (node:internal/modules/esm/utils:354:16)\n' +
+      '    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:91:18)';
+
+    const trace = parse(err);
+
+    // No source location frame — first frame is the first at-frame
+    assert.strictEqual(trace.length, 2);
+    assert.strictEqual(trace[0].getFunctionName(), 'compileSourceTextModule');
+    assert.strictEqual(trace[0].getFileName(), 'node:internal/modules/esm/utils');
+    assert.strictEqual(trace[0].getLineNumber(), 354);
+    assert.strictEqual(trace[1].getFunctionName(), 'ModuleLoader.moduleStrategy');
+  });
+
+  // Normal errors are not affected by source location detection
+  it("normal Error stack is not affected by source location detection", () => {
+    const err = {};
+    err.stack =
+      'Error: something went wrong\n' +
+      '    at foo (/path/to/file.js:10:5)\n' +
+      '    at bar (/path/to/file.js:20:3)';
+
+    const trace = parse(err);
+
+    assert.strictEqual(trace.length, 2);
+    assert.strictEqual(trace[0].getFunctionName(), 'foo');
+    assert.strictEqual(trace[0].getFileName(), '/path/to/file.js');
+    assert.strictEqual(trace[1].getFunctionName(), 'bar');
+  });
+
+  // TypeError not affected by source location detection
+  it("TypeError stack is not affected by source location detection", () => {
+    // Actual Node 20+ TypeError format
+    const err = {};
+    err.stack =
+      'TypeError: Cannot read properties of null (reading \'x\')\n' +
+      '    at Object.method (/app/index.js:5:10)';
+
+    const trace = parse(err);
+
+    assert.strictEqual(trace.length, 1);
+    assert.strictEqual(trace[0].getFunctionName(), 'Object.method');
+  });
+
+  // RangeError not affected by source location detection
+  it("RangeError stack is not affected by source location detection", () => {
+    const err = {};
+    err.stack =
+      'RangeError: Maximum call stack size exceeded\n' +
+      '    at recursive (/app/index.js:3:5)';
+
+    const trace = parse(err);
+
+    assert.strictEqual(trace.length, 1);
+    assert.strictEqual(trace[0].getFunctionName(), 'recursive');
+  });
+
+  // Custom exception types with messages containing colon+digits are not affected
+  it("custom error type with message ending in digits is not treated as source loc", () => {
+    // "MyException: /path:10" has ": " so guard correctly excludes it
+    const err = {};
+    err.stack =
+      'MyException: /path/to/file.js:10\n' +
+      '    at fn (file.js:1:2)';
+
+    const trace = parse(err);
+    assert.strictEqual(trace.length, 1);
+    assert.strictEqual(trace[0].getFunctionName(), 'fn');
+  });
+
+  // URL schemes are excluded from source location detection (http/https/ftp/data/blob)
+  it("http URL is not treated as source loc", () => {
+    const err = {};
+    err.stack = 'http://localhost:3000\n    at fn (file.js:1:2)';
+    const trace = parse(err);
+    assert.strictEqual(trace.length, 1);
+    assert.strictEqual(trace[0].getFunctionName(), 'fn');
+  });
+
+  it("https URL is not treated as source loc", () => {
+    const err = {};
+    err.stack = 'https://example.com:443\n    at fn (file.js:1:2)';
+    const trace = parse(err);
+    assert.strictEqual(trace.length, 1);
+    assert.strictEqual(trace[0].getFunctionName(), 'fn');
+  });
+
+  it("node: specifier is not treated as source loc", () => {
+    // node:internal/... paths use 'node:' (no '//') — ensure the guard catches this
+    const err = {};
+    err.stack = 'node:internal/modules/cjs/loader:1762:18\n    at fn (file.js:1:2)';
+    const trace = parse(err);
+    assert.strictEqual(trace.length, 1);
+    assert.strictEqual(trace[0].getFunctionName(), 'fn');
+  });
+
+  it("error message with colon+digits is not treated as source loc", () => {
+    const err = {};
+    err.stack = 'MyFault: status:404\n    at fn (file.js:1:2)';
+    const trace = parse(err);
+    assert.strictEqual(trace.length, 1);
+    assert.strictEqual(trace[0].getFunctionName(), 'fn');
+  });
+
+  it("empty first line does not produce source loc frame", () => {
+    const err = {};
+    err.stack = '\n    at fn (file.js:1:2)';
+    const trace = parse(err);
+    assert.strictEqual(trace.length, 1);
+    assert.strictEqual(trace[0].getFunctionName(), 'fn');
+  });
+
+  // forEach+push is equivalent to map+filter: no falsy entries in output
+  it("non-parseable lines produce no entries in output array", () => {
+    // Ensures the forEach+push refactor correctly skips non-matching lines,
+    // equivalent to the prior map().filter(Boolean) implementation.
+    const err = {};
+    err.stack =
+      'Error: test\n' +
+      '    some junk line\n' +
+      '    more junk\n' +
+      '    at fn (file.js:1:2)\n' +
+      '    ~~~not valid~~~\n' +
+      '    at bar (file.js:5:3)';
+
+    const trace = parse(err);
+    assert.strictEqual(trace.length, 2);
+    assert.strictEqual(trace[0].getFunctionName(), 'fn');
+    assert.strictEqual(trace[1].getFunctionName(), 'bar');
+    trace.forEach(site => {
+      assert.notStrictEqual(site, undefined);
+      assert.notStrictEqual(site, null);
+    });
+  });
+
+  it("returns a new array each call (no shared state)", () => {
+    const err = { stack: 'Error: x\n    at fn (file.js:1:2)' };
+    const trace1 = parse(err);
+    const trace2 = parse(err);
+    assert.notStrictEqual(trace1, trace2);
+    assert.strictEqual(trace1.length, trace2.length);
+  });
+
+  it("at-line regex does not hang on adversarial input", { timeout: 1000 }, () => {
+    const adversarial = '    at ' + 'a'.repeat(10000) + '(' + 'b'.repeat(10000) + ')';
+    const err = { stack: 'Error: test\n' + adversarial };
+    const trace = parse(err);
+    assert.strictEqual(trace.length, 1);
+  });
+
+  it("source-loc regex does not hang on adversarial first line", { timeout: 1000 }, () => {
+    const longPath = 'a'.repeat(50000);
+    const err = { stack: longPath + ':1\n    at fn (file.js:1:2)' };
+    const trace = parse(err);
+    assert.strictEqual(trace[0].getFileName(), longPath);
+    assert.strictEqual(trace[0].getLineNumber(), 1);
   });
 });
