@@ -49,7 +49,6 @@ export function parse(err) {
   //               file:// is intentionally permitted (valid source location prefix).
   //               Note: node: paths use the bare "node:" prefix without "//", so
   //               startsWith('node:') is used instead of a URL-scheme regex.
-  //
   const firstLine = allLines[0];
   const sourceLocMatch = firstLine && firstLine.match(/^(.+?):(\d+)(?::(\d+))?$/);
   if (sourceLocMatch && !firstLine.match(/:\s/) && !firstLine.match(/^(?:https?|ftp|data|blob):\/\//) && !firstLine.startsWith('node:')) {
