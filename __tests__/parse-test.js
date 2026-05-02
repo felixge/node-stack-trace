@@ -306,7 +306,20 @@ describe("parse", () => {
     assert.strictEqual(trace[1].getLineNumber(), 1762);
   });
 
-  // [REQUIRES FIX] CJS SyntaxError on Windows - drive letter path
+  // [REGRESSION] columnNumber of 0 must not be coerced to null (0 is falsy)
+  it("SyntaxError CJS: column number 0 is preserved (not coerced to null)", () => {
+    const err = {};
+    err.stack =
+      '/path/to/bad.cjs:1:0\n' +
+      'SyntaxError: Unexpected token\n' +
+      '    at wrapSafe (node:internal/modules/cjs/loader:1762:18)';
+
+    const trace = parse(err);
+
+    assert.strictEqual(trace[0].getFileName(), '/path/to/bad.cjs');
+    assert.strictEqual(trace[0].getLineNumber(), 1);
+    assert.strictEqual(trace[0].getColumnNumber(), 0, 'columnNumber 0 must not be coerced to null');
+  });
   it("SyntaxError CJS: Windows drive-letter path captured", () => {
     // Windows CJS SyntaxError: C:\path\to\file.cjs:15
     const err = {};

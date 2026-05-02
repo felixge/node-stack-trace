@@ -55,13 +55,15 @@ export function parse(err) {
   const firstLine = allLines[0];
   const sourceLocMatch = firstLine && firstLine.match(/^(.+?):(\d+)(?::(\d+))?$/);
   if (sourceLocMatch && !firstLine.match(/:\s/) && !firstLine.match(/^(?:https?|ftp|data|blob|node):\/\//)) {
+    const parsedLine = parseInt(sourceLocMatch[2], 10);
+    const parsedCol = parseInt(sourceLocMatch[3], 10);
     frames.push(createParsedCallSite({
       fileName: sourceLocMatch[1],
-      lineNumber: parseInt(sourceLocMatch[2], 10) || null,
+      lineNumber: Number.isNaN(parsedLine) ? null : parsedLine,
       functionName: null,
       typeName: null,
       methodName: null,
-      columnNumber: parseInt(sourceLocMatch[3], 10) || null,
+      columnNumber: Number.isNaN(parsedCol) ? null : parsedCol,
       'native': false,
     }));
   }
