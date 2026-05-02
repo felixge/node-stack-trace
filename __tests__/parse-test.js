@@ -95,6 +95,7 @@ describe("parse", () => {
     var parsedTrace = parse(err);
 
     let comparedFrames = 0;
+    let userFrames = 0;
 
     realTrace.forEach(function(real, i) {
       var parsed = parsedTrace[i];
@@ -106,6 +107,15 @@ describe("parse", () => {
         return;
       }
       comparedFrames++;
+
+      const realFunctionName = real.getFunctionName();
+      const realMethodName = real.getMethodName();
+      if (
+        (typeof realFunctionName === 'string' && realFunctionName.includes('testFunc')) ||
+        realMethodName === 'testFunc'
+      ) {
+        userFrames++;
+      }
 
       function compare(method, exceptions) {
         let realValue = real[method]();
@@ -129,6 +139,7 @@ describe("parse", () => {
 
     // Ensure the filter above didn't silently skip all frames.
     assert(comparedFrames > 0, `Expected at least one frame to be compared`);
+    assert(userFrames > 0, `Expected at least one user-code testFunc frame to be compared`);
   });
 
   it("stack with native call", () => {
