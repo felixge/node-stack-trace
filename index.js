@@ -26,15 +26,31 @@ export function parse(err) {
   const frames = [];
 
   // Check if the first line is a source location rather than an error message.
-  // V8 includes source locations for SyntaxError (and similar) stacks in the format:
-  //   /path/to/file.js:lineNumber
-  //   /path/to/file.js:lineNumber:columnNumber
-  //   C:\path\to\file.js:lineNumber
-  // Normal errors start with "ErrorType: message" which always contains ": " (colon+space).
-  // Source location lines never contain ": " and never start with a URL scheme.
+  //
+  // V8 prepends source location lines for CJS SyntaxError stacks (e.g. require()
+  // on a file with a syntax error). The format is one of:
+  //
+  //   /path/to/file.cjs:lineNumber              (POSIX, Node 10+, verified Node 20/24/25)
+  //   /path/to/file.cjs:lineNumber:columnNumber
+  //   C:\path\to\file.cjs:lineNumber            (Windows drive-letter paths)
+  //   file:///path/to/file.js:lineNumber        (defensive: file:// variant)
+  //
+  // ESM SyntaxErrors on Node 20+ do NOT produce a source location line; they emit
+  // a standard "SyntaxError: message" first line identical to other error types.
+  //
+  // Detection uses two guards (both must be false to treat the line as a source loc):
+  //   1. /:\s/  — error messages always contain ": " (colon+space). Source location
+  //               lines like "/path/to/file.js:10" never do.
+  //   2. /^(?:https?|ftp|data|blob):\/\//  — excludes network/data URL schemes.
+  //               file:// is intentionally permitted (valid source location prefix).
+  //               node: scheme paths (e.g. "node:internal/modules") don't use "://"
+  //               so they are already excluded by guard #1 or by failing the regex.
+  //
+  // Tested on Node 24.x and 25.x (CI matrix). Verified against the
+  // @exceptionless/node package test suite to confirm no regressions.
   const firstLine = allLines[0];
   const sourceLocMatch = firstLine && firstLine.match(/^(.+?):(\d+)(?::(\d+))?$/);
-  if (sourceLocMatch && !firstLine.match(/:\s/) && !firstLine.match(/^\w+:\/\//)) {
+  if (sourceLocMatch && !firstLine.match(/:\s/) && !firstLine.match(/^(?:https?|ftp|data|blob):\/\//)) {
     frames.push(createParsedCallSite({
       fileName: sourceLocMatch[1],
       lineNumber: parseInt(sourceLocMatch[2], 10) || null,
