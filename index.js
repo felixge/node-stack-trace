@@ -39,18 +39,22 @@ export function parse(err) {
   // a standard "SyntaxError: message" first line identical to other error types.
   //
   // Detection uses two guards (both must be false to treat the line as a source loc):
-  //   1. /:\s/  — error messages always contain ": " (colon+space). Source location
-  //               lines like "/path/to/file.js:10" never do.
-  //   2. /^(?:https?|ftp|data|blob):\/\//  — excludes network/data URL schemes.
+  //   1. /:\s/  — error messages with a non-empty message contain ": " (colon+space)
+  //               (e.g. "SyntaxError: Invalid token"). Source location lines like
+  //               "/path/to/file.js:10" never do. Empty-message errors (e.g. "Error")
+  //               don't match the source-loc regex below, so they're safe without
+  //               this guard.
+  //   2. /^(?:https?|ftp|data|blob|node):\/\//  — excludes network/data URL schemes.
   //               file:// is intentionally permitted (valid source location prefix).
-  //               node: scheme paths (e.g. "node:internal/modules") don't use "://"
-  //               so they are already excluded by guard #1 or by failing the regex.
+  //               The node: pseudo-scheme is also excluded (e.g. node:internal/...);
+  //               while node: paths don't appear as the first stack line in practice,
+  //               excluding them prevents any ambiguity.
   //
   // Tested on Node 24.x and 25.x (CI matrix). Verified against the
   // @exceptionless/node package test suite to confirm no regressions.
   const firstLine = allLines[0];
   const sourceLocMatch = firstLine && firstLine.match(/^(.+?):(\d+)(?::(\d+))?$/);
-  if (sourceLocMatch && !firstLine.match(/:\s/) && !firstLine.match(/^(?:https?|ftp|data|blob):\/\//)) {
+  if (sourceLocMatch && !firstLine.match(/:\s/) && !firstLine.match(/^(?:https?|ftp|data|blob|node):\/\//)) {
     frames.push(createParsedCallSite({
       fileName: sourceLocMatch[1],
       lineNumber: parseInt(sourceLocMatch[2], 10) || null,

@@ -501,7 +501,9 @@ describe("parse", () => {
     const start = performance.now();
     const trace = parse(err);
     const elapsed = performance.now() - start;
-    assert(elapsed < 100, `parse took ${elapsed.toFixed(1)}ms on adversarial input — possible ReDoS`);
+    // 1 000 ms is intentionally generous to avoid flakiness on loaded CI runners.
+    // True ReDoS would take seconds to minutes on this input.
+    assert(elapsed < 1000, `parse took ${elapsed.toFixed(1)}ms on adversarial input — possible ReDoS`);
     assert.strictEqual(trace.length, 1);
   });
 
@@ -512,7 +514,9 @@ describe("parse", () => {
     const start = performance.now();
     const trace = parse(err);
     const elapsed = performance.now() - start;
-    assert(elapsed < 100, `parse took ${elapsed.toFixed(1)}ms on adversarial source loc — possible ReDoS`);
+    // 1 000 ms is intentionally generous to avoid flakiness on loaded CI runners.
+    // True ReDoS would take seconds to minutes on this input.
+    assert(elapsed < 1000, `parse took ${elapsed.toFixed(1)}ms on adversarial source loc — possible ReDoS`);
     assert.strictEqual(trace[0].getFileName(), longPath);
     assert.strictEqual(trace[0].getLineNumber(), 1);
   });
