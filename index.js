@@ -50,8 +50,6 @@ export function parse(err) {
   //               Note: node: paths use the bare "node:" prefix without "//", so
   //               startsWith('node:') is used instead of a URL-scheme regex.
   //
-  // Tested on Node 24.x and 25.x (CI matrix). Verified against the
-  // @exceptionless/node package test suite to confirm no regressions.
   const firstLine = allLines[0];
   const sourceLocMatch = firstLine && firstLine.match(/^(.+?):(\d+)(?::(\d+))?$/);
   if (sourceLocMatch && !firstLine.match(/:\s/) && !firstLine.match(/^(?:https?|ftp|data|blob):\/\//) && !firstLine.startsWith('node:')) {
