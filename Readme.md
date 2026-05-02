@@ -38,12 +38,15 @@ certain properties can be retrieved with it as noted in the API docs below.
 
 ## Long stack traces
 
-stack-trace works great with [long-stack-traces][], when parsing an `err.stack`
-that has crossed the event loop boundary, a `CallSite` object returning
-`'----------------------------------------'` for `getFileName()` is created.
-All other methods of the event loop boundary call site return `null`.
+When parsing an `err.stack` that has crossed the event loop boundary, a
+`CallSite` object is created whose `getFileName()` returns the full dashed
+separator line from the stack, including any leading whitespace such as
+indentation. All other methods of the event loop boundary call site return
+`null`.
 
-[long-stack-traces]: https://github.com/tlrobinson/long-stack-traces
+Historically this behavior was often observed together with
+[long-stack-traces](https://github.com/tlrobinson/long-stack-traces), but that package is unmaintained. This module does not depend on it and still supports parsing dashed event-loop boundary markers when
+they are present in the stack string.
 
 ## API
 
@@ -75,7 +78,7 @@ is sometimes a little different, but still useful.
 
 ### CallSite
 
-The official v8 CallSite object API can be found [here](https://v8.dev/docs/stack-trace-api#customizing-stack-traces). A quick
+The official v8 CallSite object API can be found in the [V8 stack trace API docs](https://v8.dev/docs/stack-trace-api#customizing-stack-traces). A quick
 excerpt:
 
 > A CallSite object defines the following methods:
@@ -93,8 +96,6 @@ excerpt:
 > * **isEval**: does this call take place in code defined by a call to eval?
 > * **isNative**: is this call in native V8 code?
 > * **isConstructor**: is this a constructor call?
-
-[v8stackapi]: https://v8.dev/docs/stack-trace-api
 
 ## License
 
