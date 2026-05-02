@@ -1,27 +1,27 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
 import { get } from "../index.js";
 
 describe("get", () => {
-  test("basic", () => {
+  it("basic", () => {
     (function testBasic() {
       var trace = get();
 
-      //expect(trace[0].getFunction()).toBe(testBasic);
-      expect(trace[0].getFunctionName()).toBe('testBasic');
-      expect(trace[0].getFileName()).toBe(__filename);
+      assert.strictEqual(trace[0].getFunctionName(), 'testBasic');
+      assert.strictEqual(trace[0].getFileName(), import.meta.url);
     })();
   });
 
-  test("wrapper", () => {
+  it("wrapper", () => {
     (function testWrapper() {
       (function testBelowFn() {
         var trace = get(testBelowFn);
-        //expect(trace[0].getFunction()).toBe(testWrapper);
-        expect(trace[0].getFunctionName()).toBe('testWrapper');
+        assert.strictEqual(trace[0].getFunctionName(), 'testWrapper');
       })();
     })();
   });
 
-  test("deep", () => {
+  it("deep", () => {
     (function deep1() {
       (function deep2() {
         (function deep3() {
@@ -35,7 +35,7 @@ describe("get", () => {
                         (function deep10() {
                           const trace = get();
                           const hasFirstCallSite = trace.some(callSite => callSite.getFunctionName() === 'deep1');
-                          expect(hasFirstCallSite).toBe(true);
+                          assert.strictEqual(hasFirstCallSite, true);
                         })();
                       })();
                     })();

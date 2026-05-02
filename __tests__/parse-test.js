@@ -1,7 +1,9 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
 import { get, parse } from "../index.js";
 
 describe("parse", () => {
-  test("object in method name", () => {
+  it("object in method name", () => {
     const err = {};
     err.stack =
       'Error: Foo\n' +
@@ -9,39 +11,39 @@ describe("parse", () => {
       '    at Timer.listOnTimeout [as ontimeout] (timers.js:110:15)\n';
 
     const trace = parse(err);
-    expect(trace[0].getFileName()).toBe("/Users/hoitz/develop/test.coffee");
-    expect(trace[1].getFileName()).toBe("timers.js");
+    assert.strictEqual(trace[0].getFileName(), "/Users/hoitz/develop/test.coffee");
+    assert.strictEqual(trace[1].getFileName(), "timers.js");
   });
 
-  test("basic", () => {
+  it("basic", () => {
     (function testBasic() {
       const err = new Error('something went wrong');
       const trace = parse(err);
 
-      expect(trace[0].getFileName()).toBe(__filename);
-      expect(trace[0].getFunctionName()).toBe('testBasic');
+      assert.strictEqual(trace[0].getFileName(), import.meta.url);
+      assert.strictEqual(trace[0].getFunctionName(), 'testBasic');
     })();
   });
 
-  test("wrapper", () => {
+  it("wrapper", () => {
     (function testWrapper() {
       (function testBelowFn() {
         const err = new Error('something went wrong');
         const trace = parse(err);
-        expect(trace[0].getFunctionName()).toBe('testBelowFn');
-        expect(trace[1].getFunctionName()).toBe('testWrapper');
+        assert.strictEqual(trace[0].getFunctionName(), 'testBelowFn');
+        assert.strictEqual(trace[1].getFunctionName(), 'testWrapper');
       })();
     })();
   });
 
-  test("no stack", () => {
+  it("no stack", () => {
     const err = { stack: undefined };
     const trace = parse(err);
 
-    expect(trace).toStrictEqual([]);
+    assert.deepStrictEqual(trace, []);
   });
 
-  test("test corrupt stack", () => {
+  it("test corrupt stack", () => {
     const err = {};
     err.stack =
   'AssertionError: true == false\n' +
@@ -51,10 +53,10 @@ describe("parse", () => {
   '    at TestCase.run (/Users/felix/code/node-fast-or-slow/lib/test_case.js:61:8)\n';
 
     const trace = parse(err);
-    expect(trace.length).toBe(2);
+    assert.strictEqual(trace.length, 2);
   });
 
-  test("trace braces in path", () => {
+  it("trace braces in path", () => {
     const err = {};
     err.stack =
   'AssertionError: true == false\n' +
@@ -62,11 +64,11 @@ describe("parse", () => {
   '    at TestCase.run (/Users/felix (something)/code/node-fast-or-slow/lib/test_case.js:61:8)\n';
 
     const trace = parse(err);
-    expect(trace.length).toBe(2);
-    expect(trace[0].getFileName()).toBe('/Users/felix (something)/code/node-fast-or-slow/lib/test.js');
+    assert.strictEqual(trace.length, 2);
+    assert.strictEqual(trace[0].getFileName(), '/Users/felix (something)/code/node-fast-or-slow/lib/test.js');
   });
 
-  test("trace without column numbers", () => {
+  it("trace without column numbers", () => {
     const err = {};
     err.stack =
   'AssertionError: true == false\n' +
@@ -74,12 +76,12 @@ describe("parse", () => {
   '    at Test.run (/Users/felix/code/node-fast-or-slow/lib/test.js:45)';
 
     const trace = parse(err);
-    expect(trace[0].getFileName()).toBe("/Users/felix/code/node-fast-or-slow/test/fast/example/test-example.js");
-    expect(trace[0].getLineNumber()).toBe(6);
-    expect(trace[0].getColumnNumber()).toBeNull();
+    assert.strictEqual(trace[0].getFileName(), "/Users/felix/code/node-fast-or-slow/test/fast/example/test-example.js");
+    assert.strictEqual(trace[0].getLineNumber(), 6);
+    assert.strictEqual(trace[0].getColumnNumber(), null);
   });
 
-  test("compare real with parsed stack trace", () => {
+  it("compare real with parsed stack trace", () => {
     var realTrace, err;
     function TestClass() {
     }
@@ -97,7 +99,7 @@ describe("parse", () => {
     realTrace.forEach(function(real, i) {
       var parsed = parsedTrace[i];
 
-      // Only compare frames from our test file; deeper frames are Jest/Node
+      // Only compare frames from our test file; deeper frames are node:test
       // internals whose shape varies across Node versions and environments.
       const realFile = real.getFileName();
       if (!realFile || !realFile.endsWith('parse-test.js')) {
@@ -113,29 +115,23 @@ describe("parse", () => {
           realValue = exceptions[i];
         }
 
-        expect(realValue).toBe(parsedValue);
+        assert.strictEqual(realValue, parsedValue);
       }
 
       compare('getFileName');
-      compare('getFunctionName', {
-        1: 'Object.testFunc'
-      });
+      compare('getFunctionName');
       compare('getTypeName');
-      compare('getMethodName', {
-        1: 'testFunc'
-      });
-      // Line/column numbers cannot be compared: get() returns V8 CallSite
-      // values against babel-compiled positions, while parse() reads from the
-      // stack string which contains source-mapped positions. The two will
-      // never agree in a babel-transformed test environment.
+      compare('getMethodName');
+      // Line/column numbers are not compared because get() and new Error()
+      // capture their stack traces at different source positions within testFunc.
       compare('isNative');
     });
 
     // Ensure the filter above didn't silently skip all frames.
-    expect(comparedFrames).toBeGreaterThan(0);
+    assert(comparedFrames > 0, `Expected at least one frame to be compared`);
   });
 
-  test("stack with native call", () => {
+  it("stack with native call", () => {
     const err = {};
     err.stack =
   'AssertionError: true == false\n' +
@@ -149,16 +145,16 @@ describe("parse", () => {
     const trace = parse(err);
     var nativeCallSite = trace[4];
 
-    expect(nativeCallSite.getFileName()).toBeNull();
-    expect(nativeCallSite.getFunctionName()).toBe('Array.0');
-    expect(nativeCallSite.getTypeName()).toBe('Array');
-    expect(nativeCallSite.getMethodName()).toBe('0');
-    expect(nativeCallSite.getLineNumber()).toBeNull();
-    expect(nativeCallSite.getColumnNumber()).toBeNull();
-    expect(nativeCallSite.isNative()).toBe(true);
+    assert.strictEqual(nativeCallSite.getFileName(), null);
+    assert.strictEqual(nativeCallSite.getFunctionName(), 'Array.0');
+    assert.strictEqual(nativeCallSite.getTypeName(), 'Array');
+    assert.strictEqual(nativeCallSite.getMethodName(), '0');
+    assert.strictEqual(nativeCallSite.getLineNumber(), null);
+    assert.strictEqual(nativeCallSite.getColumnNumber(), null);
+    assert.strictEqual(nativeCallSite.isNative(), true);
   });
 
-  test("stack with file only", () => {
+  it("stack with file only", () => {
     const err = {};
     err.stack =
   'AssertionError: true == false\n' +
@@ -167,16 +163,16 @@ describe("parse", () => {
     const trace = parse(err);
     var callSite = trace[0];
 
-    expect(callSite.getFileName()).toBe('/Users/felix/code/node-fast-or-slow/lib/test_case.js');
-    expect(callSite.getFunctionName()).toBeNull();
-    expect(callSite.getTypeName()).toBeNull();
-    expect(callSite.getMethodName()).toBeNull();
-    expect(callSite.getLineNumber()).toBe(80);
-    expect(callSite.getColumnNumber()).toBe(10);
-    expect(callSite.isNative()).toBe(false);
+    assert.strictEqual(callSite.getFileName(), '/Users/felix/code/node-fast-or-slow/lib/test_case.js');
+    assert.strictEqual(callSite.getFunctionName(), null);
+    assert.strictEqual(callSite.getTypeName(), null);
+    assert.strictEqual(callSite.getMethodName(), null);
+    assert.strictEqual(callSite.getLineNumber(), 80);
+    assert.strictEqual(callSite.getColumnNumber(), 10);
+    assert.strictEqual(callSite.isNative(), false);
   });
 
-  test("stack with multiline message", () => {
+  it("stack with multiline message", () => {
     const err = {};
     err.stack =
   'AssertionError: true == false\nAnd some more shit\n' +
@@ -185,10 +181,10 @@ describe("parse", () => {
     const trace = parse(err);
     var callSite = trace[0];
 
-    expect(callSite.getFileName()).toBe('/Users/felix/code/node-fast-or-slow/lib/test_case.js');
+    assert.strictEqual(callSite.getFileName(), '/Users/felix/code/node-fast-or-slow/lib/test_case.js');
   });
 
-  test("stack with anonymous function call", () => {
+  it("stack with anonymous function call", () => {
     const err = {};
     err.stack =
   'AssertionError: expected [] to be arguments\n' +
@@ -197,12 +193,12 @@ describe("parse", () => {
     const trace = parse(err);
     var callSite0 = trace[0];
 
-    expect(callSite0.getFileName()).toBe('/Users/den/Projects/should.js/lib/should.js');
-    expect(callSite0.getFunctionName()).toBe('Assertion.prop.(anonymous function)');
-    expect(callSite0.getTypeName()).toBe("Assertion.prop");
-    expect(callSite0.getMethodName()).toBe("(anonymous function)");
-    expect(callSite0.getLineNumber()).toBe(60);
-    expect(callSite0.getColumnNumber()).toBe(14);
-    expect(callSite0.isNative()).toBe(false);
+    assert.strictEqual(callSite0.getFileName(), '/Users/den/Projects/should.js/lib/should.js');
+    assert.strictEqual(callSite0.getFunctionName(), 'Assertion.prop.(anonymous function)');
+    assert.strictEqual(callSite0.getTypeName(), "Assertion.prop");
+    assert.strictEqual(callSite0.getMethodName(), "(anonymous function)");
+    assert.strictEqual(callSite0.getLineNumber(), 60);
+    assert.strictEqual(callSite0.getColumnNumber(), 14);
+    assert.strictEqual(callSite0.isNative(), false);
   });
 });
