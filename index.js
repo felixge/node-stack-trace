@@ -22,11 +22,34 @@ export function parse(err) {
     return [];
   }
 
-  const lines = err.stack.split('\n').slice(1);
-  return lines
-    .map(function(line) {
+  const allLines = err.stack.split('\n');
+  const frames = [];
+
+  // Check if the first line is a source location rather than an error message.
+  // V8 includes source locations for SyntaxError (and similar) stacks in the format:
+  //   /path/to/file.js:lineNumber
+  //   /path/to/file.js:lineNumber:columnNumber
+  //   C:\path\to\file.js:lineNumber
+  // Normal errors start with "ErrorType: message" which always contains ": " (colon+space).
+  // Source location lines never contain ": " and never start with a URL scheme.
+  const firstLine = allLines[0];
+  const sourceLocMatch = firstLine && firstLine.match(/^(.+?):(\d+)(?::(\d+))?$/);
+  if (sourceLocMatch && !firstLine.match(/:\s/) && !firstLine.match(/^\w+:\/\//)) {
+    frames.push(createParsedCallSite({
+      fileName: sourceLocMatch[1],
+      lineNumber: parseInt(sourceLocMatch[2], 10) || null,
+      functionName: null,
+      typeName: null,
+      methodName: null,
+      columnNumber: parseInt(sourceLocMatch[3], 10) || null,
+      'native': false,
+    }));
+  }
+
+  const lines = allLines.slice(1);
+  lines.forEach(function(line) {
       if (line.match(/^\s*[-]{4,}$/)) {
-        return createParsedCallSite({
+        frames.push(createParsedCallSite({
           fileName: line,
           lineNumber: null,
           functionName: null,
@@ -34,7 +57,8 @@ export function parse(err) {
           methodName: null,
           columnNumber: null,
           'native': null,
-        });
+        }));
+        return;
       }
 
       const lineMatch = line.match(/at (?:(.+?)\s+\()?(?:(.+?):(\d+)(?::(\d+))?|([^)]+))\)?/);
@@ -85,11 +109,10 @@ export function parse(err) {
         'native': isNative,
       };
 
-      return createParsedCallSite(properties);
-    })
-    .filter(function(callSite) {
-      return !!callSite;
-    });
+      frames.push(createParsedCallSite(properties));
+  });
+
+  return frames;
 }
 
 function CallSite(properties) {

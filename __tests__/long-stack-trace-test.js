@@ -32,5 +32,12 @@ describe("long stack trace", () => {
 
     assert.notStrictEqual(boundary, undefined);
     assert.match(boundary.getFileName(), /-----/);
+    assert.strictEqual(boundary.getFunctionName(), null);
+    assert.strictEqual(boundary.getMethodName(), null);
+    assert.strictEqual(boundary.getTypeName(), null);
+    assert.strictEqual(boundary.getLineNumber(), null);
+    assert.strictEqual(boundary.getColumnNumber(), null);
+    assert.strictEqual(boundary.getEvalOrigin(), null);
+    assert.strictEqual(boundary.isNative(), null);
   });
 });
