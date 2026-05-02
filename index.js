@@ -25,30 +25,12 @@ export function parse(err) {
   const allLines = err.stack.split('\n');
   const frames = [];
 
-  // Check if the first line is a source location rather than an error message.
-  //
-  // V8 prepends source location lines for CJS SyntaxError stacks (e.g. require()
-  // on a file with a syntax error). The format is one of:
-  //
-  //   /path/to/file.cjs:lineNumber              (POSIX, Node 10+, verified Node 20/24/25)
-  //   /path/to/file.cjs:lineNumber:columnNumber
-  //   C:\path\to\file.cjs:lineNumber            (Windows drive-letter paths)
-  //   file:///path/to/file.js:lineNumber        (defensive: file:// variant)
-  //
-  // ESM SyntaxErrors on Node 20+ do NOT produce a source location line; they emit
-  // a standard "SyntaxError: message" first line identical to other error types.
-  //
-  // Detection uses two guards (both must be false to treat the line as a source loc):
-  //   1. /:\s/  — error messages with a non-empty message contain ": " (colon+space)
-  //               (e.g. "SyntaxError: Invalid token"). Source location lines like
-  //               "/path/to/file.js:10" never do. Empty-message errors (e.g. "Error")
-  //               don't match the source-loc regex below, so they're safe without
-  //               this guard.
-  //   2. URL/scheme exclusion — network URLs (http/https/ftp/data/blob) and Node.js
-  //               built-in specifiers (node:internal/...) are never source locations.
-  //               file:// is intentionally permitted (valid source location prefix).
-  //               Note: node: paths use the bare "node:" prefix without "//", so
-  //               startsWith('node:') is used instead of a URL-scheme regex.
+  // If the first line looks like a source location (path:line or path:line:col)
+  // rather than an error message, capture it as the first frame. V8 prepends
+  // source locations for CJS SyntaxError stacks. Two guards prevent false positives:
+  //   1. /:\s/ — error messages contain ": " (colon+space); source paths don't.
+  //   2. Scheme exclusion — network URLs and node: specifiers are not file paths.
+  //      file:// is intentionally allowed.
   const firstLine = allLines[0];
   const sourceLocMatch = firstLine && firstLine.match(/^(.+?):(\d+)(?::(\d+))?$/);
   if (sourceLocMatch && !firstLine.match(/:\s/) && !firstLine.match(/^(?:https?|ftp|data|blob):\/\//) && !firstLine.startsWith('node:')) {
@@ -118,13 +100,15 @@ export function parse(err) {
         functionName = null;
       }
 
+      const parsedLine = parseInt(lineMatch[3], 10);
+      const parsedCol  = parseInt(lineMatch[4], 10);
       const properties = {
         fileName: lineMatch[2] || null,
-        lineNumber: parseInt(lineMatch[3], 10) || null,
+        lineNumber: Number.isNaN(parsedLine) ? null : parsedLine,
         functionName: functionName,
         typeName: typeName,
         methodName: methodName,
-        columnNumber: parseInt(lineMatch[4], 10) || null,
+        columnNumber: Number.isNaN(parsedCol) ? null : parsedCol,
         'native': isNative,
       };
 
