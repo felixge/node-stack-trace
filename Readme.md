@@ -39,9 +39,10 @@ certain properties can be retrieved with it as noted in the API docs below.
 ## Long stack traces
 
 When parsing an `err.stack` that has crossed the event loop boundary, a
-`CallSite` object returning `'----------------------------------------'` for
-`getFileName()` is created. All other methods of the event loop boundary call
-site return `null`.
+`CallSite` object is created whose `getFileName()` returns the full dashed
+separator line from the stack, including any leading whitespace such as
+indentation. All other methods of the event loop boundary call site return
+`null`.
 
 Historically this behavior was often observed together with
 [long-stack-traces](https://github.com/tlrobinson/long-stack-traces), but that package is unmaintained. This module does not depend on it and still supports parsing dashed event-loop boundary markers when
